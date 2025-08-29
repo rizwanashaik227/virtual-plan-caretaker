@@ -314,7 +314,7 @@
     });
     observer.observe(document.getElementById('mood'), {childList:true});
 
-    // touch: tap plant to inspect
+    // touch: tap plants to inspect
     plantEl.addEventListener('click', ()=>{
       pushJournal('Checked the plant — states: water '+state.water+'%, sun '+state.sun+'%, fert '+state.fert+'%');
     });
@@ -323,4 +323,5 @@
     saveState();
   </script>
 </body>
+
 </html>
