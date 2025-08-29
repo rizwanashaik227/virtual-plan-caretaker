@@ -1,327 +1,66 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Virtual Plant Caretaker</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Mood Journal</title>
   <style>
-    :root{
-      --bg:#eef8f2;
-      --card:#ffffff;
-      --accent:#2f855a;
-      --muted:#667085;
-      --danger:#e53e3e;
-      --glass: rgba(255,255,255,0.6);
-    }
-    *{box-sizing:border-box}
-    body{
-      font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-      margin:0; background:linear-gradient(180deg,var(--bg),#e7fbf0); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
-    }
-    .container{
-      width:100%; max-width:980px; display:grid; grid-template-columns: 380px 1fr; gap:20px; align-items:start;
-    }
-    .card{
-      background:var(--card); border-radius:14px; box-shadow:0 8px 30px rgba(20,30,40,0.08); padding:18px; 
-    }
-    header{display:flex; align-items:center; gap:12px}
-    h1{font-size:20px;margin:0}
-    .subtitle{color:var(--muted); font-size:13px}
-
-    /* Plant preview */
-    .plant-stage{height:320px; display:flex; align-items:center; justify-content:center; position:relative}
-    .pot{width:160px; height:90px; background:linear-gradient(180deg,#8c5a3b,#6b472e); border-radius:12px 12px 28px 28px; position:absolute; bottom:28px; box-shadow:0 6px 18px rgba(30,20,10,0.12); display:flex; align-items:flex-end; justify-content:center}
-    .plant{font-size:84px; transform-origin:bottom center; transition:transform .25s ease}
-    .plant.smile{filter:drop-shadow(0 4px 6px rgba(63,63,63,0.15))}
-    .soil{position:absolute; bottom:14px; width:120px; height:18px; background:#3b2a21; border-radius:0 0 40px 40px}
-    .sun{position:absolute; top:18px; right:18px; font-size:26px; opacity:0.95}
-
-    /* Stats */
-    .stat{display:flex; align-items:center; gap:12px; margin-bottom:12px}
-    .meter{flex:1; height:12px; background:#f1f5f9; border-radius:999px; overflow:hidden}
-    .meter > span{display:block; height:100%; background:linear-gradient(90deg,var(--accent),#9ae6b4); border-radius:999px; transition:width .4s ease}
-    .stat-label{width:75px;font-size:13px;color:var(--muted)}
-
-    /* controls */
-    .controls{display:flex; gap:10px; flex-wrap:wrap}
-    button{border:0; padding:10px 14px; border-radius:10px; background:var(--glass); cursor:pointer; font-weight:600}
-    button.primary{background:linear-gradient(90deg,var(--accent),#48bb78); color:white}
-    button.warn{background:linear-gradient(90deg,#f6ad55,#ed8936); color:white}
-    button.ghost{background:transparent}
-
-    /* journal and actions */
-    .panel{display:flex; flex-direction:column; gap:12px}
-    .row{display:flex; gap:12px}
-
-    .journal{height:180px; overflow:auto; padding:10px; background:#fbfffc; border-radius:10px}
-    .entry{font-size:13px; color:#154430; padding:8px; border-radius:6px; background:linear-gradient(180deg,rgba(45,114,66,0.04),transparent)}
-
-    footer{display:flex; justify-content:space-between; align-items:center; gap:12px}
-    small{color:var(--muted)}
-
-    /* responsiveness */
-    @media (max-width:880px){
-      .container{grid-template-columns:1fr;}
-      .plant-stage{height:240px}
-    }
+    body { font-family: Arial, sans-serif; background:#f9f9f9; padding:20px; }
+    h1 { color:#2b6cb0; }
+    .card { background:white; padding:15px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); max-width:400px; margin:auto; }
+    textarea, input, button { width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #ccc; }
+    button { background:#2b6cb0; color:white; font-weight:bold; cursor:pointer; }
+    .entry { background:#edf2f7; padding:10px; margin-top:10px; border-radius:6px; }
   </style>
 </head>
 <body>
-  <main class="container">
-    <section class="card" aria-labelledby="app-title">
-      <header>
-        <div style="font-size:28px">🪴</div>
-        <div>
-          <h1 id="app-title">Virtual Plant Caretaker</h1>
-          <div class="subtitle">Keep your plant happy — water it, give sunlight, and fertilize.</div>
-        </div>
-      </header>
-
-      <div class="plant-stage" aria-live="polite">
-        <div class="sun" id="sun-emoji">☀️</div>
-        <div id="plant-emoji" class="plant" aria-hidden="true">🌱</div>
-        <div class="pot" aria-hidden="true">
-          <div class="soil"></div>
-        </div>
-      </div>
-
-      <div style="margin-top:8px">
-        <div class="stat"><div class="stat-label">Hydration</div><div class="meter" title="hydration"><span id="water-bar" style="width:70%"></span></div><div style="width:50px;text-align:right"> <strong id="water-percent">70%</strong></div></div>
-        <div class="stat"><div class="stat-label">Sunlight</div><div class="meter" title="sunlight"><span id="sun-bar" style="width:55%"></span></div><div style="width:50px;text-align:right"> <strong id="sun-percent">55%</strong></div></div>
-        <div class="stat"><div class="stat-label">Nutrition</div><div class="meter" title="nutrition"><span id="fert-bar" style="width:40%"></span></div><div style="width:50px;text-align:right"> <strong id="fert-percent">40%</strong></div></div>
-      </div>
-
-      <div style="margin-top:12px" class="controls">
-        <button id="btn-water" class="primary" title="Water the plant">💧 Water</button>
-        <button id="btn-sun" class="warn" title="Give sunlight">☀️ Sun</button>
-        <button id="btn-fert" title="Fertilize the plant">🌿 Fertilize</button>
-        <button id="btn-prune" class="ghost" title="Prune for a tiny growth boost">✂️ Prune</button>
-        <button id="btn-reset" class="ghost" title="Reset plant state">↺ Reset</button>
-      </div>
-
-      <footer style="margin-top:12px">
-        <small id="mood">Mood: Content</small>
-        <small>Saved locally · <span id="last-saved">never</span></small>
-      </footer>
-    </section>
-
-    <aside class="card panel" aria-labelledby="journal-title">
-      <h2 id="journal-title" style="margin:0 0 6px 0">Care Journal</h2>
-      <div class="journal" id="journal"></div>
-
-      <div class="row">
-        <input id="note-input" placeholder="Add a note (what did you do?)" style="flex:1;padding:10px;border-radius:10px;border:1px solid #eef3ec" />
-        <button id="btn-note">Add</button>
-      </div>
-
-      <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
-        <div class="row" style="flex:1">
-          <label style="font-size:13px;color:var(--muted);">Speed</label>
-          <select id="speed" style="padding:8px;border-radius:8px;border:1px solid #eef3ec">
-            <option value="normal">Normal</option>
-            <option value="fast">Fast</option>
-            <option value="paused">Paused</option>
-          </select>
-        </div>
-        <div>
-          <button id="btn-export">Export JSON</button>
-        </div>
-      </div>
-    </aside>
-
-  </main>
+  <div class="card">
+    <h1>Daily Mood Journal</h1>
+    <label>Mood:</label>
+    <input type="text" id="mood" placeholder="e.g., Happy, Tired, Excited">
+    
+    <label>Note:</label>
+    <textarea id="note" placeholder="Write a short note..."></textarea>
+    
+    <button onclick="saveEntry()">Save Entry</button>
+    
+    <h2>Previous Entries</h2>
+    <div id="entries"></div>
+  </div>
 
   <script>
-    // Simple virtual plant logic
-    const plantEl = document.getElementById('plant-emoji');
-    const waterBar = document.getElementById('water-bar');
-    const sunBar = document.getElementById('sun-bar');
-    const fertBar = document.getElementById('fert-bar');
-    const waterPct = document.getElementById('water-percent');
-    const sunPct = document.getElementById('sun-percent');
-    const fertPct = document.getElementById('fert-percent');
-    const mood = document.getElementById('mood');
-    const journalEl = document.getElementById('journal');
-    const lastSaved = document.getElementById('last-saved');
-
-    // Default state
-    const defaultState = {
-      water: 70,
-      sun: 55,
-      fert: 40,
-      stage: 1, // 1 seedling, 2 small, 3 mature, 0 sick
-      journal: [],
-      lastSaved: null
-    };
-
-    let state = loadState();
-
-    // Helpers
-    function clamp(v){ return Math.max(0, Math.min(100, Math.round(v))); }
-    function setBars(){
-      waterBar.style.width = state.water + '%'; waterPct.textContent = state.water + '%';
-      sunBar.style.width = state.sun + '%'; sunPct.textContent = state.sun + '%';
-      fertBar.style.width = state.fert + '%'; fertPct.textContent = state.fert + '%';
+    function loadEntries() {
+      const saved = JSON.parse(localStorage.getItem("moodEntries") || "[]");
+      const entriesDiv = document.getElementById("entries");
+      entriesDiv.innerHTML = "";
+      saved.forEach(e => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerHTML = `<b>${e.date} - Mood:</b> ${e.mood}<br>${e.note}`;
+        entriesDiv.appendChild(div);
+      });
     }
 
-    function pushJournal(text){
-      const t = new Date().toLocaleString();
-      state.journal.unshift({t, text});
-      renderJournal();
-      saveState();
+    function saveEntry() {
+      const mood = document.getElementById("mood").value;
+      const note = document.getElementById("note").value;
+      if (!mood || !note) return alert("Please fill all fields!");
+      
+      const entry = {
+        mood, note,
+        date: new Date().toLocaleString()
+      };
+      
+      const saved = JSON.parse(localStorage.getItem("moodEntries") || "[]");
+      saved.unshift(entry);
+      localStorage.setItem("moodEntries", JSON.stringify(saved));
+      
+      document.getElementById("mood").value = "";
+      document.getElementById("note").value = "";
+      loadEntries();
     }
 
-    function renderJournal(){
-      journalEl.innerHTML = '';
-      for(const e of state.journal.slice(0,50)){
-        const div = document.createElement('div'); div.className='entry'; div.textContent = `${e.t} — ${e.text}`; journalEl.appendChild(div);
-      }
-    }
-
-    function updateMoodAndPlant(){
-      const avg = (state.water + state.sun + state.fert) / 3;
-      // simple stage logic
-      if(avg < 25){ state.stage = 0; plantEl.textContent = '🥀'; }
-      else if(avg < 50){ state.stage = 1; plantEl.textContent = '🌱'; }
-      else if(avg < 80){ state.stage = 2; plantEl.textContent = '🌿'; }
-      else { state.stage = 3; plantEl.textContent = '🌳'; }
-
-      // mood
-      if(state.stage === 0) mood.textContent = 'Mood: Wilting — needs help!';
-      else if(state.stage === 1) mood.textContent = 'Mood: Okay';
-      else if(state.stage === 2) mood.textContent = 'Mood: Happy';
-      else mood.textContent = 'Mood: Thriving 🌟';
-
-      // small animation for joy
-      plantEl.style.transform = `scale(${1 + (avg/400)}) rotate(${(state.stage-1)*2}deg)`;
-      if(avg>85) plantEl.classList.add('smile'); else plantEl.classList.remove('smile');
-    }
-
-    function saveState(){
-      state.lastSaved = new Date().toISOString();
-      localStorage.setItem('virt-plant-state', JSON.stringify(state));
-      lastSaved.textContent = new Date(state.lastSaved).toLocaleString();
-    }
-
-    function loadState(){
-      try{
-        const raw = localStorage.getItem('virt-plant-state');
-        if(raw){
-          const parsed = JSON.parse(raw);
-          const merged = {...defaultState, ...parsed};
-          // clamp numbers
-          merged.water = clamp(merged.water);
-          merged.sun = clamp(merged.sun);
-          merged.fert = clamp(merged.fert);
-          renderInitial(merged);
-          return merged;
-        }
-      }catch(e){console.warn(e)}
-      renderInitial(defaultState);
-      return {...defaultState};
-    }
-
-    function renderInitial(st){
-      state = st;
-      setBars(); renderJournal(); updateMoodAndPlant();
-      lastSaved.textContent = state.lastSaved ? new Date(state.lastSaved).toLocaleString() : 'never';
-    }
-
-    // Actions
-    document.getElementById('btn-water').addEventListener('click', ()=>{
-      state.water = clamp(state.water + 22);
-      pushJournal('Gave the plant water'); setBars(); updateMoodAndPlant();
-    });
-    document.getElementById('btn-sun').addEventListener('click', ()=>{
-      state.sun = clamp(state.sun + 20);
-      pushJournal('Placed plant in sunlight'); setBars(); updateMoodAndPlant();
-    });
-    document.getElementById('btn-fert').addEventListener('click', ()=>{
-      state.fert = clamp(state.fert + 18);
-      pushJournal('Added fertilizer'); setBars(); updateMoodAndPlant();
-    });
-    document.getElementById('btn-prune').addEventListener('click', ()=>{
-      state.fert = clamp(state.fert - 6);
-      state.water = clamp(state.water - 6);
-      state.sun = clamp(state.sun + 12);
-      pushJournal('Pruned the plant — a fresh boost of sunlight'); setBars(); updateMoodAndPlant();
-    });
-    document.getElementById('btn-reset').addEventListener('click', ()=>{
-      if(confirm('Reset plant to default state?')){
-        state = {...defaultState}; pushJournal('Reset the plant'); setBars(); renderJournal(); updateMoodAndPlant(); saveState();
-      }
-    });
-
-    // note
-    document.getElementById('btn-note').addEventListener('click', ()=>{
-      const input = document.getElementById('note-input'); const v = input.value.trim(); if(!v) return; pushJournal(v); input.value='';
-    });
-
-    // speed control
-    const speedSelect = document.getElementById('speed');
-    function getDecayInterval(){
-      const s = speedSelect.value;
-      if(s==='fast') return 3000;
-      if(s==='paused') return null;
-      return 12000; // normal
-    }
-
-    // natural decay over time
-    let decayTimer = null;
-    function startDecay(){
-      stopDecay();
-      const t = getDecayInterval();
-      if(!t) return;
-      decayTimer = setInterval(()=>{
-        // small random changes to simulate environment
-        state.water = clamp(state.water - (Math.random()*6 + 3));
-        state.sun = clamp(state.sun - (Math.random()*5 + 2));
-        // nutrition decays slower
-        state.fert = clamp(state.fert - (Math.random()*2 + 0.5));
-        // if very well fed, small chance to grow
-        if(state.water>80 && state.sun>70 && state.fert>60 && Math.random()>0.92){
-          pushJournal('Plant had a growth spurt!');
-        }
-        setBars(); updateMoodAndPlant(); saveState();
-      }, t);
-    }
-    function stopDecay(){ if(decayTimer) clearInterval(decayTimer); decayTimer=null; }
-    speedSelect.addEventListener('change', ()=>{ startDecay(); pushJournal('Changed speed to '+speedSelect.value); });
-
-    // auto-save periodically
-    setInterval(()=>{ saveState(); }, 20000);
-
-    // export
-    document.getElementById('btn-export').addEventListener('click', ()=>{
-      const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download = 'virtual-plant-state.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    });
-
-    // initial start
-    startDecay();
-
-    // keyboard shortcuts
-    window.addEventListener('keydown', (e)=>{
-      if(e.key === 'w') document.getElementById('btn-water').click();
-      if(e.key === 's') document.getElementById('btn-sun').click();
-      if(e.key === 'f') document.getElementById('btn-fert').click();
-    });
-
-    // small accessibility: announce changes
-    const observer = new MutationObserver(()=>{
-      // announce mood via aria-live
-    });
-    observer.observe(document.getElementById('mood'), {childList:true});
-
-    // touch: tap plants to inspect
-    plantEl.addEventListener('click', ()=>{
-      pushJournal('Checked the plant — states: water '+state.water+'%, sun '+state.sun+'%, fert '+state.fert+'%');
-    });
-
-    // save initially
-    saveState();
+    loadEntries();
   </script>
 </body>
-
 </html>
